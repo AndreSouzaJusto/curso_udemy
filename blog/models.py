@@ -1,30 +1,41 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.urls import reverse
 
+class PublishedManager(models.Manager):
+    def get_queryset(self):
+        return super(PublishedManager,self).get_queryset()\
+                                           .filter(status='publicado')
 
 class Post(models.Model):
-
-    status = ( ('rascunho','Rascunho'),
-               ('publicado','Publicado')
+    STATUS = (
+        ('rascunho','Rascunho'),
+        ('publicado','Publicado'),
     )
+    titulo = models.CharField(max_length=250)
+    slug   = models.SlugField(max_length=250)#https://site.com/noticias/campeonato-brasileiro-2020/01/02/2020
+    autor  = models.ForeignKey(User,
+                               on_delete=models.CASCADE)
+    conteudo  = models.TextField()
+    publicado = models.DateTimeField(default=timezone.now)
+    criado    = models.DateTimeField(auto_now_add=True)
+    alterado  = models.DateTimeField(auto_now=True)
+    status    = models.CharField(max_length=10,
+                                 choices=STATUS,
+                                 default='rascunho')
 
-    title       = models.CharField(max_length=250)
-    slug        = models.SlugField(max_length=250)
-    author      = models.ForeignKey(User, on_delete=models.CASCADE)
-    text        = models.TextField()
-    publicado   = models.DateTimeField(default=timezone.now())
-    criado      = models.DateTimeField(auto_now_add=True)
-    alterado    = models.DateTimeField(auto_now=True)
-    status      = models.CharField(max_length=10,choices=status,default='rasscunho')
+    objects   = models.Manager()
+    published = PublishedManager()
 
-# Ordena por coluna de status
+    def get_absolute_url(self):
+        return reverse('post_detail',args=[self.slug])
+
     class Meta:
-        ordering = ('publicado',)
-
+        ordering = ('-publicado',)
 
     def __str__(self):
-        return self.title
+        return self.titulo
 
 
 # Create your models here.
